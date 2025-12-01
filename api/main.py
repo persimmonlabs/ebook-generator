@@ -1,6 +1,7 @@
 """AlphaGrit Ebook Generator API."""
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import os
 
 from .routers import ebooks_router, jobs_router
@@ -27,8 +28,17 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(ebooks_router)
-app.include_router(jobs_router)
+try:
+    app.include_router(ebooks_router)
+    print("[STARTUP] Ebooks router registered", flush=True)
+except Exception as e:
+    print(f"[ERROR] Failed to register ebooks router: {e}", flush=True)
+
+try:
+    app.include_router(jobs_router)
+    print("[STARTUP] Jobs router registered", flush=True)
+except Exception as e:
+    print(f"[ERROR] Failed to register jobs router: {e}", flush=True)
 
 
 @app.get("/")
@@ -46,6 +56,28 @@ def root():
 def health():
     """Health check endpoint for Railway."""
     return {"status": "healthy", "agent": "Morpheus is awake"}
+
+
+@app.get("/routes")
+def list_routes():
+    """List all registered routes for debugging."""
+    routes = []
+    for route in app.routes:
+        if hasattr(route, "path") and hasattr(route, "methods"):
+            routes.append({
+                "path": route.path,
+                "methods": list(route.methods) if route.methods else [],
+            })
+    return {"routes": routes}
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Log registered routes at startup."""
+    print("[STARTUP] Registered routes:", flush=True)
+    for route in app.routes:
+        if hasattr(route, "path") and hasattr(route, "methods"):
+            print(f"  {list(route.methods) if route.methods else []} {route.path}", flush=True)
 
 
 print("[STARTUP] Agent Morpheus ready", flush=True)
