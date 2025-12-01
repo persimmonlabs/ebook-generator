@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-from .routers import ebooks, jobs
+from .routers import ebooks_router, jobs_router
 
 # Get CORS origins from env
 ALLOWED = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
@@ -27,8 +27,8 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(ebooks.router)
-app.include_router(jobs.router)
+app.include_router(ebooks_router)
+app.include_router(jobs_router)
 
 
 @app.get("/")
