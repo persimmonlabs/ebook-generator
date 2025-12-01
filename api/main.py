@@ -15,12 +15,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Parse CORS origins - strip whitespace from each origin
+cors_origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip()]
+logger.info(f"Parsed CORS origins: {cors_origins}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     logger.info("Starting AlphaGrit Ebook Generator API")
-    logger.info(f"CORS origins: {settings.ALLOWED_ORIGINS}")
+    logger.info(f"CORS origins configured: {cors_origins}")
     yield
     logger.info("Shutting down AlphaGrit Ebook Generator API")
 
@@ -33,12 +37,15 @@ app = FastAPI(
 )
 
 # CORS middleware for Next.js frontend
+# Must be added BEFORE routers for preflight OPTIONS to work
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS.split(","),
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,  # Cache preflight for 10 minutes
 )
 
 # Include routers

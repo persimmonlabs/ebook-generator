@@ -3,14 +3,16 @@ import jwt
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import create_client
+from typing import Optional
 
 from .config import settings
 
-security = HTTPBearer()
+# auto_error=False prevents 403 on preflight OPTIONS requests
+security = HTTPBearer(auto_error=False)
 
 
 async def verify_admin(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> str:
     """
     Verify JWT token and check admin role.
@@ -25,6 +27,13 @@ async def verify_admin(
         HTTPException 401: Invalid or expired token
         HTTPException 403: User is not an admin
     """
+    if credentials is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Authorization header required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     token = credentials.credentials
 
     # Decode Supabase JWT
