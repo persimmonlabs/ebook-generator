@@ -4,14 +4,20 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-# Add parent directory to path for importing generator
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from generator import EbookGenerator
-
 from ..job_store import update_job, JobStatus
 from .supabase import insert_ebook
 
 logger = logging.getLogger(__name__)
+
+
+def _get_ebook_generator():
+    """Lazy import of EbookGenerator to avoid import errors at startup."""
+    # Add parent directory to path for importing generator
+    parent_dir = str(Path(__file__).parent.parent.parent)
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
+    from generator import EbookGenerator
+    return EbookGenerator
 
 
 async def run_pdf_generation(
@@ -55,7 +61,8 @@ async def run_pdf_generation(
                 job_id, current_step="Extracting PDF content", progress=10
             )
 
-            # Use existing EbookGenerator
+            # Use existing EbookGenerator (lazy import)
+            EbookGenerator = _get_ebook_generator()
             generator = EbookGenerator(openrouter_key, tmp_path)
 
             update_job(
@@ -127,6 +134,7 @@ async def run_text_generation(
         with TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
 
+            EbookGenerator = _get_ebook_generator()
             generator = EbookGenerator(openrouter_key, tmp_path)
 
             update_job(
