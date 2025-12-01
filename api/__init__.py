@@ -1,0 +1,1 @@
+"""AlphaGrit Ebook Generator API."""
